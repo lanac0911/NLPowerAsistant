@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
-
+import { NativeBaseProvider, Box, Text } from "native-base";
+import { colors } from "@styles/index";
 interface IData {
   members: string[];
 }
@@ -9,7 +10,7 @@ const App: React.FC = () => {
   const [data, setData] = useState<IData[]>([]);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:5000/members')
+    fetch("http://127.0.0.1:5000/members")
       .then((res) => res.json())
       .then((data) => {
         setData([data]);
@@ -21,18 +22,16 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Data from Flask API</h1>
-        {data.length === 0 ? (
-          <p> loading ... </p>
+    <NativeBaseProvider>
+      <Box>Hello world</Box>
+      {data.length === 0 ? (
+          <Text> loading ... </Text>
         ) : (
           data[0].members.map((member, i) => (
-            <p key={i}>{member}</p>
+            <Text key={i}>{member}</Text>
           ))
         )}
-      </header>
-    </div>
+    </NativeBaseProvider>
   );
 };
 
