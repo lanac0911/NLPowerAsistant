@@ -46,13 +46,20 @@ const ChatApp: React.FC = () => {
         throw new Error("Failed to send message");
       } else {
         const data = await response.json();
-        console.log("else ta...", data);
+        console.log("!!!!!!!!!!!!!!!!", data);
+        const entityMessages = data.entities.map((entity: any) => `${entity[0]}: ${entity[1]}`);
+        const NERMessage: IMessage = {
+          id: messages.length,
+          content: '{\n' + entityMessages.join("\n") + '\n}',
+          isUserMessage: false,
+        };
+        // setMessages([...messages, NERMessage]);
         const newMessage: IMessage = {
           id: messages.length,
           content: data.message,
           isUserMessage: false,
         };
-        setMessages([...messages, newMessage]); // 添加从后端返回的消息
+        setMessages([...messages, NERMessage, newMessage]);
       }
     } catch (error) {
       console.error("Error:", error);
