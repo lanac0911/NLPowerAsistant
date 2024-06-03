@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Container, Text, ScrollView, View, VStack, Box, Spinner, HStack } from "native-base";
+import {
+  Container,
+  Text,
+  ScrollView,
+  View,
+  VStack,
+  Box,
+  Spinner,
+  HStack,
+} from "native-base";
 import Header from "./Header";
 import * as styles from "@styles/index";
 import ButtonArea from "./ButtonArea";
@@ -9,10 +18,19 @@ interface IMessage {
   id: number;
   content: string;
   isUserMessage?: boolean;
+  color?: string;
 }
 const LoadingBox = () => (
-  <HStack bg={"#fff"} borderRadius={5} w={'35%'} p={2} px={3} space={3} position="relative">
-    <Spinner  color="primary.500" />
+  <HStack
+    bg={"#fff"}
+    borderRadius={5}
+    w={"35%"}
+    p={2}
+    px={3}
+    space={3}
+    position="relative"
+  >
+    <Spinner color="primary.500" />
     <Text color="primary.500">查詢中...</Text>
     <Triangle type={"server"} />
   </HStack>
@@ -47,10 +65,12 @@ const ChatApp: React.FC = () => {
       } else {
         const data = await response.json();
         console.log("!!!!!!!!!!!!!!!!", data);
-        const entityMessages = data.entities.map((entity: any) => `${entity[0]}: ${entity[1]}`);
+        const entityMessages = data.entities.map(
+          (entity: any) => `${entity[0]}: ${entity[1]}`
+        );
         const NERMessage: IMessage = {
           id: messages.length,
-          content: '{\n' + entityMessages.join("\n") + '\n}',
+          content: "{\n" + entityMessages.join("\n") + "\n}",
           isUserMessage: false,
         };
         // setMessages([...messages, NERMessage]);
@@ -60,12 +80,22 @@ const ChatApp: React.FC = () => {
           isUserMessage: false,
         };
 
+        // 異常
         const newMessage2: IMessage = {
           id: messages.length,
           content: data.ano,
           isUserMessage: false,
+          color: data.ano === "有異常" ? "#f00" : "#000",
         };
-        setMessages([...messages, NERMessage, newMessage, newMessage2]);
+
+        // 添加
+        let append = []
+        if (data.ano === "有異常")
+          append = [...messages, NERMessage, newMessage, newMessage2];
+        else
+        append = [...messages, NERMessage, newMessage];
+
+        setMessages(append);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -111,7 +141,9 @@ const ChatApp: React.FC = () => {
                 mr={!message.isUserMessage ? "auto" : 0}
                 position="relative"
               >
-                <Text fontSize={"lg"}>{message.content}</Text>
+                <Text fontSize={"lg"} color={message.color}>
+                  {message.content}
+                </Text>
                 <Triangle type={message.isUserMessage ? "user" : "server"} />
               </Box>
             ))}

@@ -149,8 +149,8 @@ def send_message():
     
 
     # --- 取得時間 ---
-    time = get_year_from_2013() # 格式：2013-06-03 16:18:00
-    print("年份改為2013的時間是:", time)
+    now_time = get_year_from_2013() # 格式：2013-06-03 16:18:00
+    print("年份改為2013的時間是:", now_time)
 
     # --- client 傳來的 ---
     data = request.get_json()
@@ -165,6 +165,7 @@ def send_message():
     # --- 取出電器 NER ---
     appliance = None
     query = '使用狀況' # 預設
+    time = now_time # !!!!!! 之後要套模型
     appliance_code = None
     for entity in entities:
         # 如果元组的第二个元素是'Appliance'
@@ -178,16 +179,24 @@ def send_message():
         print('沒有該電器')
 
     # --- 取出功率＆異常 ---
+    extend_result = ''
+    
     if appliance_code != None: 
         print('code-', appliance_code)
         power = float(get_power_from_csv(time, appliance_code))
         ifAnomaly = get_anomaly_from_csv(time, appliance_code)
-         # --- get answer---
+        # --- get answer---
         answer_power, answer_ano = return_ans(time, power, query, appliance_code, ifAnomaly)
-
+        extend_result = extend_message(answer_power,answer_ano, appliance, query, time)
     else :
         answer_power = '無此電器，請確認'
         answer_ano = -1
+    
+    to_client = {
+        'message': extend_result, 
+        'entities': entities, 
+        'ano': answer_ano
+    }
         
 
 
@@ -200,23 +209,20 @@ def send_message():
     
     
     # 返回预测结果给客户端
-    return jsonify({'message': answer_power, 'entities': entities, 'ano': answer_ano}), 200
+    return jsonify(to_client), 200
 
 
 # 淳昇 part
-@app.route('/extend-message', methods=['POST'])
-def extend_message():
-    # 這裡會拿到 (messages)
-    # 1. 結果，如：120w, 開/關...
-    # 2. ner 結果，如：[('昨天', 'Time'), ('冰箱', 'Appliance'), ('使用狀況', 'Query')]
-    data = request.get_json()
-    message = data.get('message')
-    messages.append(message)
+## answer_power: 瓦數 or 開起/關閉
+## answer_ano: ‘有異常’ or ‘無異常’
+## appliance: NER- 電氣中文名稱
+## query: NER- 需求
+## time: NER- ex. 2013-06-03 22:40:00
 
-   
-    extend_result = '' ### 處理好的內容
-    # 返回预测结果给客户端
-    return extend_result
+def extend_message(answer_power: str, answer_ano:str , appliance: str, query: str, time: str):
+    
+    
+    return '這裡是擴展後的答案'
 
 # 运行应用
 if __name__ == '__main__':
