@@ -189,7 +189,7 @@ def send_message():
         answer_power, answer_ano = return_ans(time, power, query, appliance_code, ifAnomaly)
         extend_result = extend_message(answer_power,answer_ano, appliance, query, time)
     else :
-        answer_power = '無此電器，請確認'
+        extend_result = '無此電器，請確認'
         answer_ano = -1
     
     to_client = {
@@ -205,7 +205,7 @@ def send_message():
         
 
     
-    print("result==", answer_power,answer_ano)
+    # print("result==", answer_power,answer_ano)
     
     
     # 返回预测结果给客户端
