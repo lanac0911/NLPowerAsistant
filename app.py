@@ -96,10 +96,9 @@ def get_power_from_csv(date, appliance):
 
 def contains_open_or_close(text):
     # 将文本转换为小写，以便不区分大小写进行匹配
-    text_lower = text.lower()
     
     # 检查字符串中是否包含'開'或'關'
-    if '開' in text_lower or '關' in text_lower:
+    if '開' in text or '關' in text:
         return True
     else:
         return False
