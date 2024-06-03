@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
+from datetime import datetime, timedelta
 
 # 从CSV文件中读取数据
-data = pd.read_csv('P_BME.csv', header=None, squeeze=True).tolist()
+data = pd.read_csv('./P_BME.csv', header=None, squeeze=True).tolist()
 
 # 定义环境状态
 class Environment:
@@ -14,6 +15,7 @@ class Environment:
         self.steps = 0
         self.window_size = 3  # 窗口大小，单位为分钟
         self.anomaly_steps = []  # 存储异常步骤的数组
+        self.results = []  # 存储每个时间步的结果
 
     # 获取当前状态
     def get_state(self):
@@ -34,6 +36,7 @@ class Environment:
         if self.state >= self.max_steps:
             done = True
         
+        anomaly_detected = 0
         # 如果当前状态为开
         if action == 1:
             # 检查前后各3分钟的状态
@@ -42,7 +45,10 @@ class Environment:
                 if all(self.data[i] == 0 for i in range(self.state - self.window_size, self.state)) and all(self.data[i] == 0 for i in range(self.state + 1, self.state + self.window_size + 1)):
                     reward = -1  # 异常状态的奖励设为负值
                     done = True
+                    anomaly_detected = 1
                     self.anomaly_steps.append(self.state)  # 将异常步骤添加到数组中
+        
+        self.results.append(anomaly_detected)
         
         return self.state, reward, done
 
@@ -98,5 +104,11 @@ while not done:
     next_state, reward, done = env.step(action)
     state = next_state
 
-# 输出所有异常步骤
+# 保存结果为txt文件
+start_time = datetime(2012, 4, 1, 7, 0, 0)
+with open('results.txt', 'w') as f:
+    for i, result in enumerate(env.results):
+        current_time = start_time + timedelta(minutes=i)
+        f.write(f"{current_time.strftime('%Y-%m-%d %H:%M:%S')} {result}\n")
+
 print("Detected anomalies at steps:", env.get_anomaly_steps())
