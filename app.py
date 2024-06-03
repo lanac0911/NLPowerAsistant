@@ -16,12 +16,12 @@ CORS(app)
 messages = []
 
 def threshold_table (code: str): 
-    if code == 'B1E': return 0
-    elif code == 'FRE': return 500
-    elif code == 'HPE': return 0
-    elif code == 'BME': return 0
-    elif code == 'CDE': return 0
-    elif code == 'TVE': return 0
+    if code == 'B1E': return 10
+    elif code == 'FRE': return 0 # 冰箱一直在運行
+    elif code == 'HPE': return 1000
+    elif code == 'BME': return 300
+    elif code == 'CDE': return 500
+    elif code == 'TVE': return 50
     else: return 0
     
 
@@ -38,6 +38,7 @@ def reverse_appliance_table(name: str):
     if name == '房間': return 'B1E'
     elif name == '冰箱': return 'FRE'
     elif name == '加熱器': return 'HPE'
+    elif name == '熱器': return 'HPE'
     elif name == '地下室': return 'BME'
     elif name == '烘乾機': return 'CDE'
     elif name == '電視': return 'TVE'
@@ -82,15 +83,19 @@ def get_power_from_csv(date, appliance):
     with open(f'./predict_list/power/p_{appliance}.txt', 'r') as file:
         # 逐行读取文件内容
         for line in file:
-            # 将每行按照制表符分割，并取出日期和值
-            parts = line.strip().split('\t')
+            # 将每行按照空格分割，并取出日期和值
+            parts = line.strip().split(' ')
             row_date = parts[0]
             value = parts[1]
+            # print(row_date)
+            # print(value)
+            # print('---------')
+            
             
             # 如果找到了对应日期的数值，则返回该数值
-            if row_date == date:
-                return value
-    
+            if row_date + ' ' + value == date:
+                return parts[2]
+            
     # 如果未找到对应日期的数值，则返回 None
     return -1
 
@@ -102,6 +107,32 @@ def contains_open_or_close(text):
         return True
     else:
         return False
+
+
+def return_ans (time, power, query, code, ifAnomaly):
+    answer_power = ''
+    answer_ano = ''
+    if code == None:
+        answer_power = '無此電器，請確認'
+        return answer_power, answer_ano
+    
+    # --- 開關問題 or 功率問題 ---
+    ifOpenQuery = contains_open_or_close(query)
+    # 如果是開關問題：
+    if ifOpenQuery:
+        threshold = threshold_table(code)
+        if power > threshold: answer_power = '開啟'
+        else: answer_power = '關閉'
+    # 如果是功率問題：
+    else: 
+        answer_power = power
+        
+        
+    # --- 是否有異常 ---
+    if ifAnomaly == 1 : answer_ano = '有異常'
+    else: answer_ano = '無異常'
+    
+    return answer_power, answer_ano
 
 # 查看数据的路由
 @app.route('/members')
@@ -133,7 +164,7 @@ def send_message():
     
     # --- 取出電器 NER ---
     appliance = None
-    query = None
+    query = '使用狀況' # 預設
     appliance_code = None
     for entity in entities:
         # 如果元组的第二个元素是'Appliance'
@@ -151,28 +182,19 @@ def send_message():
         print('code-', appliance_code)
         power = float(get_power_from_csv(time, appliance_code))
         ifAnomaly = get_anomaly_from_csv(time, appliance_code)
-    else :
-        print('沒有該電器，所以無法找值')
-        
-    # --- DEFINE 要回傳的 ---
-    answer_power = ''
-    answer_ano = ''
+         # --- get answer---
+        answer_power, answer_ano = return_ans(time, power, query, appliance_code, ifAnomaly)
 
-    # --- 回傳 開關 or 功率 ---
-    ifOpenQuery = contains_open_or_close(query)
-    
-    
-    # answer_power: 如果是問開/關的話
-    if ifOpenQuery:
-        threshold = threshold_table(appliance_code)
-        if power > threshold: answer_power = '開啟'
-        else: answer_power = '關閉'
-    else: 
-        answer_power = power
+    else :
+        answer_power = '無此電器，請確認'
+        answer_ano = -1
         
-    # answer_ano: 
-    if ifAnomaly : answer_ano = '有異常'
-    else: answer_ano = '無異常'
+
+
+   
+
+        
+
     
     print("result==", answer_power,answer_ano)
     
