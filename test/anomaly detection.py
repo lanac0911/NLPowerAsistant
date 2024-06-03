@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import time
 
 # 从CSV文件中读取数据
 data = pd.read_csv('./P_BME.csv', header=None, squeeze=True).tolist()
@@ -15,7 +16,7 @@ class Environment:
         self.steps = 0
         self.window_size = 3  # 窗口大小，单位为分钟
         self.anomaly_steps = []  # 存储异常步骤的数组
-        self.results = []  # 存储每个时间步的结果
+        self.results = [0] * self.max_steps  # 初始化结果数组
 
     # 获取当前状态
     def get_state(self):
@@ -31,11 +32,6 @@ class Environment:
         reward = 0
         done = False
         
-        # 更新状态
-        self.state += 1
-        if self.state >= self.max_steps:
-            done = True
-        
         anomaly_detected = 0
         # 如果当前状态为开
         if action == 1:
@@ -44,11 +40,15 @@ class Environment:
                 self.state + self.window_size < self.max_steps):
                 if all(self.data[i] == 0 for i in range(self.state - self.window_size, self.state)) and all(self.data[i] == 0 for i in range(self.state + 1, self.state + self.window_size + 1)):
                     reward = -1  # 异常状态的奖励设为负值
-                    done = True
                     anomaly_detected = 1
                     self.anomaly_steps.append(self.state)  # 将异常步骤添加到数组中
+
+        self.results[self.state] = anomaly_detected
         
-        self.results.append(anomaly_detected)
+        # 更新状态
+        self.state += 1
+        if self.state >= self.max_steps:
+            done = True
         
         return self.state, reward, done
 
@@ -69,22 +69,29 @@ class Agent:
 
     # 更新Q值
     def update_q_table(self, state, action, reward, next_state):
-        predict = self.q_table[state, action]
-        target = reward + self.discount_factor * np.max(self.q_table[next_state, :])
-        self.q_table[state, action] += self.learning_rate * (target - predict)
+        if next_state < self.q_table.shape[0]:  # 确保索引在边界之内
+            predict = self.q_table[state, action]
+            target = reward + self.discount_factor * np.max(self.q_table[next_state, :])
+            self.q_table[state, action] += self.learning_rate * (target - predict)
 
 # 定义训练函数
-def train(env, agent, num_episodes=1000):
+def train(env, agent, num_episodes=10):  # 先尝试10个回合
     for episode in range(num_episodes):
-        state = env.get_state()
+        start_time = time.time()
+        env.state = 0  # 重置环境状态
         total_reward = 0
         done = False
-        while not done:
+        steps = 0
+        while not done and steps < env.max_steps:
+            state = env.get_state()
             action = agent.choose_action(state)
             next_state, reward, done = env.step(action)
             agent.update_q_table(state, action, reward, next_state)
-            state = next_state
             total_reward += reward
+            steps += 1
+        end_time = time.time()
+        if episode % 1 == 0:  # 每个回合打印一次
+            print(f"Episode {episode}/{num_episodes} - Total Reward: {total_reward} - Time taken: {end_time - start_time:.2f} seconds")
     print("Training finished.")
 
 # 创建环境和智能体
@@ -97,12 +104,14 @@ agent = Agent(num_states, num_actions)
 train(env, agent)
 
 # 使用智能体进行预测
-state = env.get_state()
+env.state = 0  # 重置环境状态
 done = False
-while not done:
+steps = 0
+while not done and steps < env.max_steps:
+    state = env.get_state()
     action = agent.choose_action(state)
     next_state, reward, done = env.step(action)
-    state = next_state
+    steps += 1
 
 # 保存结果为txt文件
 start_time = datetime(2012, 4, 1, 7, 0, 0)
