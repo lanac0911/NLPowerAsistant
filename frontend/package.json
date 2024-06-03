@@ -16,9 +16,9 @@
     "native-base": "^3.4.28",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-native-safe-area-context": "3.3.2",
-    "react-native-svg": "12.1.1",
-    "react-native-web": "0.17.1",
+    "react-native-safe-area-context": "^3.3.2",
+    "react-native-svg": "^12.1.1",
+    "react-native-web": "^0.17.1",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"

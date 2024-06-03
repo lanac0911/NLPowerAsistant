@@ -1,5 +1,30 @@
+
+html, body { height: 100vh; }
+/* These styles disable body scrolling if you are using <ScrollView> */
+body { overflow: hidden; }
+/* These styles make the root element full-height */
+#root { 
+  display:flex; height:100%; 
+  /* max-width: 100% !important;
+  max-height: 100vh !important;
+  width: 100% !important;
+  height: 100% !important; */
+  /* background-color: rgb(34, 32, 32); */
+  background-image: url("@styles/images/pat-back.svg");
+  background-size: 20%; /* 设置背景图像大小为50% */
+  /* display: flex; */
+}
+
+
+/* html,
+body {
+  height: 100vh;
+}
 .App {
   text-align: center;
+}
+#root {
+  height: 100%;
 }
 
 .App-logo {
@@ -35,4 +60,4 @@
   to {
     transform: rotate(360deg);
   }
-}
+} */
