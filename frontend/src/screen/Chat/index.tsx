@@ -59,7 +59,13 @@ const ChatApp: React.FC = () => {
           content: data.message,
           isUserMessage: false,
         };
-        setMessages([...messages, NERMessage, newMessage]);
+
+        const newMessage2: IMessage = {
+          id: messages.length,
+          content: data.ano,
+          isUserMessage: false,
+        };
+        setMessages([...messages, NERMessage, newMessage, newMessage2]);
       }
     } catch (error) {
       console.error("Error:", error);
