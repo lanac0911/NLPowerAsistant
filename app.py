@@ -255,16 +255,6 @@ def send_message():
         'ano': answer_ano
     }
         
-
-
-   
-
-        
-
-    
-    # print("result==", answer_power,answer_ano)
-    
-    
     # 返回预测结果给客户端
     return jsonify(to_client), 200
 
@@ -278,7 +268,7 @@ def send_message():
 
 def extend_message(answer_power: str, answer_ano:str , appliance: str, query: str, time: str):
     response = f"根據您的查詢，以下是 {time.replace('2013','2024')} 的 {appliance} 使用狀況：\n\n"
-    response += f"使用狀況: {answer_power}\n"
+    response += f"使用狀況: {answer_power} 瓦\n"
     response += f"異常情況: {answer_ano}\n\n"
     response += "希望這些訊息對您有幫助。如果有其他問題，請隨時告訴我！"
 
