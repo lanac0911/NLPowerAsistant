@@ -3,8 +3,9 @@ from flask_cors import CORS
 from flask import Flask, request, jsonify
 import time
 import spacy
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
+import re
 
 # 导入已经训练好的模型
 nlp = spacy.load("./model-best")
@@ -59,6 +60,59 @@ def get_year_from_2013():
     current_time2_str = current_time2.strftime("%Y-%m-%d %H:%M:%S")
     
     return current_time2_str
+
+def parse_time_string(time_str):
+    now = get_year_from_2013()
+    time = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
+    # 檢查並處理“昨天”
+    if '今天' in time_str:
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 檢查並處理“昨天”
+    if '昨天' in time_str:
+        time = time - timedelta(days=1)
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 檢查並處理“前天”
+    if '前天' in time_str:
+        time = time - timedelta(days=2)
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 檢查並處理“上個月”
+    if '上個月' in time_str:
+        time = time - timedelta(days=30)
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 處理“YYYY-MM-DD”格式
+    match = re.match(r'(\d{4})-(\d{2})-(\d{2})', time_str)
+    if match:
+        time = datetime.strptime(time_str, "%Y-%m-%d")
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 處理“YYYY/M/D”格式
+    match = re.match(r'(\d{4})/(\d{1,2})/(\d{1,2})', time_str)
+    if match:
+        time = datetime.strptime(time_str, "%Y/%m/%d")
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 處理“X月X號”格式
+    match = re.match(r'(\d{1,2})月(\d{1,2})號', time_str)
+    if match:
+        month, day = match.groups()
+        year = time.year
+        time = datetime(year, int(month), int(day))
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 處理“X/X”格式
+    match = re.match(r'(\d{1,2})/(\d{1,2})', time_str)
+    if match:
+        month, day = match.groups()
+        year = time.year
+        time = datetime(year, int(month), int(day))
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    raise ValueError("未知的時間格式: " + time_str)
+
 
 def get_anomaly_from_csv(date, appliance):
     print('近來得', date, type(date))
@@ -161,13 +215,16 @@ def send_message():
     doc = nlp(message)
     entities = [(ent.text, ent.label_) for ent in doc.ents]
     print('===' ,entities)
-    
+    print(entities[0])
     # --- 取出電器 NER ---
     appliance = None
     query = '使用狀況' # 預設
     time = now_time # !!!!!! 之後要套模型
     appliance_code = None
     for entity in entities:
+        if entity[1] == 'Time':
+            time = parse_time_string(entity[0])
+            print('time:',time)
         # 如果元组的第二个元素是'Appliance'
         if entity[1] == 'Appliance':
             appliance = entity[0]
@@ -220,9 +277,12 @@ def send_message():
 ## time: NER- ex. 2013-06-03 22:40:00
 
 def extend_message(answer_power: str, answer_ano:str , appliance: str, query: str, time: str):
-    
-    
-    return '這裡是擴展後的答案'
+    response = f"根據您的查詢，以下是 {time.replace('2013','2024')} 的 {appliance} 使用狀況：\n\n"
+    response += f"使用狀況: {answer_power}\n"
+    response += f"異常情況: {answer_ano}\n\n"
+    response += "希望這些訊息對您有幫助。如果有其他問題，請隨時告訴我！"
+
+    return response
 
 # 运行应用
 if __name__ == '__main__':
