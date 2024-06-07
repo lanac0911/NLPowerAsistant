@@ -7,10 +7,10 @@ from datetime import datetime, timedelta
 import pandas as pd
 import re
 
-# 导入已经训练好的模型
+# 導入已經訓練好的模型
 nlp = spacy.load("./model-best")
 
-# 初始化 Flask 应用
+# 初始化 Flask App
 app = Flask(__name__)
 CORS(app)
 
