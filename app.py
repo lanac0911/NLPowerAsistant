@@ -41,7 +41,7 @@ def reverse_appliance_table(name: str):
     elif name == '加熱器': return 'HPE'
     elif name == '熱器': return 'HPE'
     elif name == '地下室': return 'BME'
-    elif name == '烘乾機': return 'CDE'
+    elif name == '乾衣機': return 'CDE'
     elif name == '電視': return 'TVE'
 
     
@@ -50,94 +50,168 @@ def get_year_from_2013():
     now = datetime.now()
     # 格式化現在時間
     current_time = now.strftime("%Y-%m-%d %H:%M:%S")
-    # 将输入的时间字符串解析为datetime对象
+    # 將輸入的時間字串解析為datetime對象
     current_time = datetime.strptime(current_time, "%Y-%m-%d %H:%M:%S")
     
-    # 使用replace方法将年份修改为2013，并将秒数设为00
+    # 使用replace方法將年份修改為2013，並將秒數設為00
     current_time2 = current_time.replace(year=2013, second=0)
     
-    # 将修改后的datetime对象格式化为字符串
+    # 將修改後的datetime物件格式化為字串
     current_time2_str = current_time2.strftime("%Y-%m-%d %H:%M:%S")
     
     return current_time2_str
 
-def parse_time_string(time_str):
+def match_time(time_str, days):
+    
     now = get_year_from_2013()
     time = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
-    # 檢查並處理“昨天”
-    if '今天' in time_str:
+
+    # 處理上午時間
+    morning_match = re.search(r'(上午|早上)(\d{1,2})點', time_str)
+    if morning_match:
+        hour = int(morning_match.group(2))
+        time = datetime(time.year, time.month, time.day, hour, 0) - timedelta(days=days)
         return time.strftime("%Y-%m-%d %H:%M:%S")
+
+    # 處理下午時間
+    afternoon_match = re.search(r'(下午|晚上)(\d{1,2})點', time_str)
+    if afternoon_match:
+        hour = int(afternoon_match.group(2)) + 12
+        time = datetime(time.year, time.month, time.day, hour, 0) - timedelta(days=days)
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+
+    # 處理24小時制時間
+    hour_match = re.search(r'(\d{1,2})點', time_str)
+    if hour_match:
+        hour = int(hour_match.group(1))
+        time = datetime(time.year, time.month, time.day, hour, 0) - timedelta(days=days)
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 如果沒有小時訊息，傳回目前時間減去指定的天數
+    time = datetime(time.year, time.month, time.day, 0, 0) - timedelta(days=days)
+    return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+
+
+def parse_time_string(time_str):
+
+    now = get_year_from_2013()
+    time = datetime.strptime(now, "%Y-%m-%d %H:%M:%S")
+
+    # 檢查並處理“今天”
+    if '今天' in time_str:
+        time_str = time_str.replace('今天', '').strip()
+        print(time_str)
+        return match_time(time_str, 0)
     
     # 檢查並處理“昨天”
     if '昨天' in time_str:
-        time = time - timedelta(days=1)
-        return time.strftime("%Y-%m-%d %H:%M:%S")
+        time_str = time_str.replace('昨天', '').strip()
+        return match_time(time_str, 1)
     
     # 檢查並處理“前天”
     if '前天' in time_str:
-        time = time - timedelta(days=2)
-        return time.strftime("%Y-%m-%d %H:%M:%S")
+        time_str = time_str.replace('前天', '').strip()
+        return match_time(time_str, 2)
+    
+    # 檢查並處理“上週”
+    if '上週' in time_str or '上禮拜' in time_str:
+        time_str = time_str.replace('上週', '').replace('上禮拜', '').strip()
+        return match_time(time_str, 7)
     
     # 檢查並處理“上個月”
     if '上個月' in time_str:
-        time = time - timedelta(days=30)
-        return time.strftime("%Y-%m-%d %H:%M:%S")
+        time_str = time_str.replace('上個月', '').strip()
+        return match_time(time_str, 30)
+    
+    # 檢查並處理“去年”
+    if '去年' in time_str:
+        time_str = time_str.replace('去年', '').strip()
+        return match_time(time_str, 365)
     
     # 處理“YYYY-MM-DD”格式
-    match = re.match(r'(\d{4})-(\d{2})-(\d{2})', time_str)
-    if match:
-        time = datetime.strptime(time_str, "%Y-%m-%d")
+    if '-' in time_str and time_str.count('-') == 2:
+        time_parts = re.findall(r'\d+', time_str)
+        year = int(time_parts[0])
+        month = int(time_parts[1])
+        day = int(time_parts[2])
+        hour = int(time_parts[3]) if len(time_parts) > 3 else 0
+        # 處理晚上時間
+        if '晚上' in time_str or '下午' in time_str:
+            hour += 12
+        time = datetime(year, month, day, hour)
         return time.strftime("%Y-%m-%d %H:%M:%S")
     
     # 處理“YYYY/M/D”格式
-    match = re.match(r'(\d{4})/(\d{1,2})/(\d{1,2})', time_str)
-    if match:
-        time = datetime.strptime(time_str, "%Y/%m/%d")
+    if '/' in time_str and time_str.count('/') == 2:
+        time_parts = re.findall(r'\d+', time_str)
+        year = int(time_parts[0])
+        month = int(time_parts[1])
+        day = int(time_parts[2])
+        hour = int(time_parts[3]) if len(time_parts) > 3 else 0
+        # 處理晚上時間
+        if '晚上' in time_str or '下午' in time_str:
+            hour += 12
+        time = datetime(year, month, day, hour)
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 处理“YYYYMMDD”格式
+    if re.match(r'(\d{4})(\d{2})(\d{2})', time_str):
+        time = datetime.strptime(time_str, "%Y%m%d")
         return time.strftime("%Y-%m-%d %H:%M:%S")
     
     # 處理“X月X號”格式
-    match = re.match(r'(\d{1,2})月(\d{1,2})號', time_str)
-    if match:
-        month, day = match.groups()
+    if '月' in time_str and '號' in time_str:
+        time_parts = re.findall(r'\d+', time_str)
+        month = int(time_parts[0])
+        day = int(time_parts[1])
+        hour = int(time_parts[2]) if len(time_parts) > 2 else 0
         year = time.year
-        time = datetime(year, int(month), int(day))
+        # 處理晚上時間
+        if '晚上' in time_str or '下午' in time_str:
+            hour += 12
+        time = datetime(year, month, day, hour)
         return time.strftime("%Y-%m-%d %H:%M:%S")
     
     # 處理“X/X”格式
-    match = re.match(r'(\d{1,2})/(\d{1,2})', time_str)
-    if match:
-        month, day = match.groups()
+    if '/' in time_str and time_str.count('/') == 1:
+        time_parts = re.findall(r'\d+', time_str)
+        month = int(time_parts[0])
+        day = int(time_parts[1])
+        hour = int(time_parts[2]) if len(time_parts) > 2 else 0
         year = time.year
-        time = datetime(year, int(month), int(day))
+        # 處理晚上時間
+        if '晚上' in time_str or '下午' in time_str:
+            hour += 12
+        time = datetime(year, month, day, hour)
         return time.strftime("%Y-%m-%d %H:%M:%S")
     
     raise ValueError("未知的時間格式: " + time_str)
 
-
 def get_anomaly_from_csv(date, appliance):
     print('近來得', date, type(date))
-    # 打开对应设备的 txt 文件
+    # 開啟對應電器異常檢測的 txt 檔案
     with open(f'./predict_list/anomaly/{appliance}_results.txt', 'r') as file:
-        # 逐行读取文件内容
+        # 逐行讀取文件內容
         for line in file:
-            # 将每行按照空格分割，并取出日期和值
+            # 將每行依照空格分割，並取出日期和數值
             parts = line.strip().split(' ')
             row_date = parts[0]
             value = parts[1]
             
-            # 如果找到了对应日期的数值，则返回该数值
+            # 如果找到了對應日期的數值，則傳回該數值
             if row_date + ' ' + value == date:
                 return parts[2]
     
-    # 如果未找到对应日期的数值，则返回 None
+    # 如果找不到對應日期的數值，則傳回 None
     return None
 
 def get_power_from_csv(date, appliance):
-    # 读取对应设备的 txt 文件
+    # 開啟對應電器功率的 txt 檔案
     with open(f'./predict_list/power/p_{appliance}.txt', 'r') as file:
-        # 逐行读取文件内容
+        # 逐行讀取文件內容
         for line in file:
-            # 将每行按照空格分割，并取出日期和值
+            # 將每行依照空格分割，並取出日期和數值
             parts = line.strip().split(' ')
             row_date = parts[0]
             value = parts[1]
@@ -146,17 +220,17 @@ def get_power_from_csv(date, appliance):
             # print('---------')
             
             
-            # 如果找到了对应日期的数值，则返回该数值
+            # 如果找到了對應日期的數值，則傳回該數值
             if row_date + ' ' + value == date:
                 return parts[2]
             
-    # 如果未找到对应日期的数值，则返回 None
+    # 如果找不到對應日期的數值，則傳回 -1
     return -1
 
 def contains_open_or_close(text):
-    # 将文本转换为小写，以便不区分大小写进行匹配
+    # 將文字轉換為小寫，以便不區分大小寫進行匹配
     
-    # 检查字符串中是否包含'開'或'關'
+    # 檢查字串中是否包含'開'或'關'
     if '開' in text or '關' in text:
         return True
     else:
@@ -188,12 +262,12 @@ def return_ans (time, power, query, code, ifAnomaly):
     
     return answer_power, answer_ano
 
-# 查看数据的路由
+# 查看資料的路由
 @app.route('/members')
 def members():
     return { "members": ["Member1", "Member2", "Member3"] }
 
-# 发送消息的路由
+# 發送訊息的路由
 @app.route('/send-message', methods=['POST'])
 def send_message():
     # 會用到的
@@ -219,13 +293,13 @@ def send_message():
     # --- 取出電器 NER ---
     appliance = None
     query = '使用狀況' # 預設
-    time = now_time # !!!!!! 之後要套模型
+    time = now_time 
     appliance_code = None
     for entity in entities:
         if entity[1] == 'Time':
             time = parse_time_string(entity[0])
             print('time:',time)
-        # 如果元组的第二个元素是'Appliance'
+        # 如果元組的第二個元素是'Appliance'
         if entity[1] == 'Appliance':
             appliance = entity[0]
         if entity[1] == 'Query':
@@ -255,7 +329,7 @@ def send_message():
         'ano': answer_ano
     }
         
-    # 返回预测结果给客户端
+    # 傳回預測結果給客戶端
     return jsonify(to_client), 200
 
 
@@ -267,13 +341,13 @@ def send_message():
 ## time: NER- ex. 2013-06-03 22:40:00
 
 def extend_message(answer_power: str, answer_ano:str , appliance: str, query: str, time: str):
-    response = f"根據您的查詢，以下是 {time.replace('2013','2024')} 的 {appliance} 使用狀況：\n\n"
-    response += f"使用狀況: {answer_power} 瓦\n"
+    response = f"根據您的查詢，以下是 {time.replace('2013','2024').replace('2012','2023')} 的 {appliance} 使用狀況：\n\n"
+    response += f"使用狀況: {answer_power}\n\n"
     response += f"異常情況: {answer_ano}\n\n"
     response += "希望這些訊息對您有幫助。如果有其他問題，請隨時告訴我！"
 
     return response
 
-# 运行应用
+# 運行App
 if __name__ == '__main__':
     app.run(debug=True)
