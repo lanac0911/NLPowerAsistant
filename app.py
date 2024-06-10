@@ -6,6 +6,7 @@ import spacy
 from datetime import datetime, timedelta
 import pandas as pd
 import re
+import random
 
 # 导入已经训练好的模型
 nlp = spacy.load("./model-best")
@@ -133,6 +134,18 @@ def get_anomaly_from_csv(date, appliance):
     return None
 
 def get_power_from_csv(date, appliance):
+    # 解析日期字符串
+    date_obj = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+    year = date_obj.year
+
+    # 如果年份不在 2012 到 2014 之間，則隨機選擇一個新年份
+    if year < 2012 or year > 2014:
+        new_year = random.choice([2012, 2013, 2014])
+        date_obj = date_obj.replace(year=new_year)
+        date = date_obj.strftime("%Y-%m-%d %H:%M:%S")
+
+    print('data', date)
+
     # 读取对应设备的 txt 文件
     with open(f'./predict_list/power/p_{appliance}.txt', 'r') as file:
         # 逐行读取文件内容
@@ -144,7 +157,6 @@ def get_power_from_csv(date, appliance):
             # print(row_date)
             # print(value)
             # print('---------')
-            
             
             # 如果找到了对应日期的数值，则返回该数值
             if row_date + ' ' + value == date:
@@ -268,7 +280,7 @@ def send_message():
 
 def extend_message(answer_power: str, answer_ano:str , appliance: str, query: str, time: str):
     response = f"根據您的查詢，以下是 {time.replace('2013','2024')} 的 {appliance} 使用狀況：\n\n"
-    response += f"使用狀況: {answer_power} 瓦\n"
+    response += f"使用狀況: {answer_power}\n"
     response += f"異常情況: {answer_ano}\n\n"
     response += "希望這些訊息對您有幫助。如果有其他問題，請隨時告訴我！"
 
